@@ -3,52 +3,125 @@ from utils.make_time import make_time
 from utils.color import color 
 
 # Create your models here.
-class rep:
-	def __repr__(self):
-		return self.name
 
-
-class Person(models.Model,rep):
-	name = models.CharField(max_length=300,default ='', unique = True) 
-
-	def __repr__(self):
-		return self.name
-
-class Question(models.Model,rep):
-	name = models.CharField(max_length=300,default ='', unique = True) 
+class Person(models.Model):
+	'''participant answering question.'''
 	number = models.IntegerField(unique = True, default =None)
 
 	def __repr__(self):
-		return self.name
+		return str(self.number)
+	def __str__(self):
+		return self.__repr__()
 
-class Inputtype(models.Model,rep):
+class Question(models.Model):
+	'''question the text/response belongs to.'''
+	number = models.IntegerField(unique = True, default =None)
+	title = models.CharField(max_length=300,default ='') 
+	description = models.TextField(default='',blank=True, null=True)
+
+	def __repr__(self):
+		return str(self.number)
+	def __str__(self):
+		return self.__repr__()
+
+	def texts(self,transcriber_name = 'questfox'):
+		responses = self.response_set.all()
+		texts = []
+		tn = transcriber_name
+		for response in responses:
+			texts.extend(list(response.text_set.filter(transcriber__name=tn)))
+		return texts
+
+	@property
+	def persons(self):
+		persons= []
+		responses = self.response_set.all()
+		for response in responses:
+			persons.append(response.person)
+		return list(set(persons))
+
+class Inputtype(models.Model):
+	'''whether input was given via keyboard or speech.'''
 	name = models.CharField(max_length=300,default ='', unique = True) 
 
 	def __repr__(self):
 		return self.name
 
 class Transcriber(models.Model):
+	'''speech input is transcribed by multiple ASR systems and human
+	transcriber.
+	'''
 	name = models.CharField(max_length=300,default ='', unique = True)
 	human = models.BooleanField(default=False)
 
 	def __repr__(self):
 		return self.name
 
-class Text(models.Model):
-	dargs = {'on_delete':models.SET_NULL,'blank':True,'null':True}
-	text = models.TextField(default='',blank=True, null=True)
-	Transcriber= models.ForeignKey(Transcriber,**dargs)
 
 class Response(models.Model):
+	''' response to specific question linked to a person question and audio file.
+	text_set links the the set of transcriptions if speech input_type
+	otherwise it links to the keyboard entered text (there will only be one text)
+	audio quality rate the quality of the recording 
+	(not present for all responses)
+	'''
 	dargs = {'on_delete':models.SET_NULL,'blank':True,'null':True}
 	question = models.ForeignKey(Question,**dargs)
 	person = models.ForeignKey(Person,**dargs)
 	input_type= models.ForeignKey(Inputtype,**dargs)
-	texts = models.ManyToManyField(Text,blank=True, default= None)
 	audio_filename = models.CharField(max_length=1000,default ='')
+	audio_quality = models.CharField(max_length=50,default ='')
 	response_date = models.DateField(default = None)
+	row_index = models.IntegerField(default =None)
+
+	def __repr__(self):
+		return self.question.__repr__() + ' | ' + self.person.__repr__()
+
+class Text(models.Model):
+	'''answer to a specific question from a person.
+	for speech input_type there are multiple transcriptions
+	alternate_transcriptions links to these.
+	'''
+	dargs = {'on_delete':models.SET_NULL,'blank':True,'null':True}
+	text = models.TextField(default='',blank=True, null=True)
+	transcriber= models.ForeignKey(Transcriber,**dargs)
+	response = models.ForeignKey(Response,**dargs)
+
+	def __repr__(self):
+		m = self.transcriber.__repr__() + ' | ' + self.text[:20] 
+		if len(self.text) >= 20: m += '...'
+		m += " | " + str(self.word_count)
+		return m
+	def __str__(self):
+		return self.__repr__()
+
+	@property
+	def person(self):
+		return self.response.person.number
+	@property
+	def question(self):
+		return self.response.question.number
+	@property
+	def audio_quality(self):
+		return self.response.audio_quality
+	@property
+	def audio_filename(self):
+		return self.response.audio_filename
+	@property
+	def alternate_transcriptions(self):
+		other_texts = self.response.text_set.all()
+		output = [t for t in other_texts if t != self]
+		return output
+
+	@property
+	def word_count(self):
+		return len(self.text.split(' '))
 
 class Session(models.Model):
+	'''participants entered a questionaire online, this was recorded
+	in sessions. A person could complete the questionaire in multiple sessions.
+	questions can be answered multiple times by a participant.
+	'''
 	values= models.TextField(default='',blank=True, null=True)
 	session_date = models.DateField(default = None)
 	row_index = models.IntegerField(unique = True, default =None)
@@ -61,6 +134,7 @@ class Session(models.Model):
 		return m
 
 class Variable(models.Model):
+	'''gives some information about the questions.'''
 	name = models.CharField(max_length=30,default ='')
 	title= models.CharField(max_length=300,default ='')
 	value= models.CharField(max_length=1000,default ='')
@@ -68,3 +142,12 @@ class Variable(models.Model):
 
 	def __repr__(self):
 		return self.name + ' | ' + self.title
+
+
+
+
+
+
+#need for migration purposes
+class rep:
+	pass
