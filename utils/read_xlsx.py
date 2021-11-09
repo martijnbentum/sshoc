@@ -1,8 +1,10 @@
+from django.db import connection
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl import load_workbook
 from .make_defaults import save_model
-from texts.models import Variable, Session
+from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
+from texts.models import Transcriber
 
 def open_nidi_xlsx():
 	return load_workbook('../NIDI-voice-recorded-interviews-audio-transcripts.xlsx')
@@ -57,23 +59,81 @@ def make_audio_fn_dict(wb = None):
 	
 def _add_date_and_time(date, time):
 	d, t = date, time
+	print('date',d,'time',t)
 	return datetime(d.year,d.month,d.day,t.hour,t.minute,t.second)
-		
 
-def read_in_text():
-	qf = Transcriber.objects.get('questfox')
-	cd = Transcriber.objects.get('conversational_dialogues')
-	oh = Transcriber.objects.get('oral_history')
-	ps = Transcriber.objects.get('parliamentary_speeches')
+def get_person(person_number):
+	person_number = int(person_number)
+	instance = save_model(Person,{'number':person_number},'number')
+	return instance
+
+def get_question(question_number):
+	question_number = int(question_number)
+	instance = save_model(Question,{'number':question_number},'number')
+	return instance
+
+def get_transcriber(name, human = False):
+	instance = save_model(Transcriber,{'name':name,'human':human},'name')
+	return instance
+
+def make_text(text, transcriber, response):
+	'''makes a new text instance based on a text and a transcriber.'''
+	d ={'text':text,'transcriber':transcriber,'response':response}
+	instance = save_model(Text,d)
+	return instance
+	
+def _make_texts(tqf,tcd,toh,tps, response):
+	'''special function to make texts instances form the 4 asr systems used
+	to decode the audio.
+	'''
+	qf = Transcriber.objects.get(name ='questfox')
+	cd = Transcriber.objects.get(name ='conversational_dialogues')
+	oh = Transcriber.objects.get(name ='oral_history')
+	ps = Transcriber.objects.get(name ='parliamentary_speeches')
+	scribes = [qf,cd,oh,ps]
+	texts = [tqf,tcd,toh,tps]
+	return [make_text(t,s,response) for t,s in zip(texts,scribes)]
+		
+def _make_response(question,person,input_type,audio_filename,audio_quality,
+	response_date,row_index):
+	print('making response:',question,person)
+	d = {'question':question,'person':person,'input_type':input_type}
+	d.update({'audio_filename':audio_filename,'audio_quality':audio_quality})
+	d.update({'response_date':response_date,'row_index':row_index})
+	instance = save_model(Response,d,'row_index')
+	return instance
+
+def _line_ok(line):
+	return line[0] != None
+
+
+def read_in_text_audio_matching(clean_db = False):
+	if clean_db: 
+		Response.objects.all().delete()
+		Text.objects.all().delete()
+		connection.cursor().execute("VACUUM")
+	qf = Transcriber.objects.get(name ='questfox')
+	speech = Inputtype.objects.get(name = 'speech')
 	wb = open_text_xlsx()
 	audio_fn_dict = make_audio_fn_dict(wb = wb)
 	sheet = wb['Matched Text Entries']
 	for i,line in enumerate(list(sheet.values)[1:]):
-		response_date = _add_date_and_time(line[0],line[1]
-		pp_id = line[4]
-		question_number = line[7]
+		if not _line_ok(line): continue
+		print('line',line)
+		response_date = _add_date_and_time(line[0],line[1])
+		person = get_person(line[4])
+		question = get_question(line[7])
 		audio_fn = line[8]
-		_, tqf, tcd, toh, tps, audio_quality = audio_fn_dict[audio_fn]
+		audio_quality = ''
+		response = _make_response(question,person,speech,audio_fn,audio_quality,
+			response_date,i)
+		if audio_fn in audio_fn_dict.keys():
+			_, tqf, tcd, toh, tps, audio_quality = audio_fn_dict[audio_fn]
+			texts = _make_texts(tqf,tcd,toh,tps,response)
+		else:
+			texts = [make_text(line[5],qf, response)]
+			print('could not find:',audio_fn)
+
 			
 	
 	
