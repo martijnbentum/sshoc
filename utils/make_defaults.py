@@ -20,16 +20,23 @@ def add_inputtype():
 		save_model(Inputtype,{'name':name},'name')
 
 
-def save_model(model, input_dict, check_fieldname):
-		check = {check_fieldname: input_dict[check_fieldname]}
-		name = input_dict[check_fieldname]
-		if model.objects.filter(**check):
-			print(c(name,'blue'),'already present in database')
-			return
+def save_model(model, input_dict, check_fieldname = ''):
+		model_name = model._meta.model_name
+		print('model:',model_name,'input:',input_dict,'check:',check_fieldname)
+		name = ''
+		if check_fieldname:
+			check = {check_fieldname: input_dict[check_fieldname]}
+			name = input_dict[check_fieldname]
+			queryset= model.objects.filter(**check)
+			if queryset:
+				print(c(name,'blue'),'already present in database')
+				return queryset[0]
+		if not name: name = list(input_dict.values())[0]
 		try:
-			x = model(**input_dict)
-			x.save()
+			instance = model(**input_dict)
+			instance.save()
 		except: print(c('could not save','red'),c(name,'blue'), sys.exc_info())
 		else: print('saved:',c(name,'blue'))
+		return instance
 	
 
