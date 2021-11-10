@@ -76,6 +76,8 @@ class Response(models.Model):
 
 	def __repr__(self):
 		return self.question.__repr__() + ' | ' + self.person.__repr__()
+	def __str__(self):
+		return self.__repr__()
 
 class Text(models.Model):
 	'''answer to a specific question from a person.
