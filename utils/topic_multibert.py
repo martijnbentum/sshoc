@@ -1,3 +1,10 @@
+'''
+inspired by:
+https://github.com/MaartenGr/BERTopic
+https://towardsdatascience.com/topic-modeling-with-bert-779f7db187e6
+maybe also relevant:
+https://github.com/ddangelov/Top2Vec
+'''
 from sentence_transformers import SentenceTransformer
 import pickle
 
