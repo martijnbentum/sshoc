@@ -1,6 +1,9 @@
 from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
 
+def get_questions(condition = 'audio', exclude_q8 = True):
+	return Question.objects.filter(number__gte = 9).filter(condition = condition)
+
 def get_responses(questions = [],exclude_q8 = True):
 	'''get all responses order by person.
 	by default excluded question 8 because this has no content (test sentence)
@@ -14,6 +17,7 @@ def get_responses(questions = [],exclude_q8 = True):
 	return r
 
 def _handle_question(question, exclude_q8 = True):
+	'''retrieves a single question from database'''
 	if hasattr(question,'number'):question = question.number
 	if question == 'all': 
 		if exclude_q8:question = Question.objects.filter(number__gte =9)
