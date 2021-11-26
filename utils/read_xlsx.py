@@ -5,6 +5,83 @@ from openpyxl import load_workbook
 from .make_defaults import save_model
 from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
+from . import extract_text
+
+def open_question_file():
+	t = open('../questions.txt').read().split('\n')
+	t = [x for x in t if x]
+	o = []
+	for x in t:
+		question = int(x.split('|')[0].split('Q1 ')[0].strip(' Q'))
+		description = x.split('| ')[1].split(',')[0]
+		condition = x.split(',')[-1].strip(' ')
+		if condition == 'Beide condities':condition = 'Closed question'
+		elif condition == 'Audioconditie':condition = 'Audio'
+		elif condition == 'Tekstconditie':condition = 'text'	
+		else: raise ValueError('unknown',condition)
+		o.append([question,description,condition])
+	return o
+
+def read_questions_in_database():
+	'''reads in questions into the database.'''
+	questions_text = open_question_file()
+	for qt in questions_text:
+		number, description, condition = qt
+		q = get_question(number)
+		q.description = description
+		q.title = description
+		q.condition = condition
+		q.save()
+
+def link_response_to_session():
+	'''links all responses in the database to a session if not linked yet.
+	all sessions with an audio response will be linked to a session
+	all other session are the sessions with a keyboard response
+	'''
+	for s in Session.objects.all():
+		temp = Response.objects.filter(person__number= s.person)
+		responses = temp.filter(response_date=s.session_date)
+		for response in responses:
+			if not response.session:
+				t = response.text_set.all()[0].text
+				i = response.question.column_index
+				if eval(s.values)[i] == t:
+					print('found match', 'linking session',s,'to:',response)
+					response.session = s
+					response.save()
+			else:
+				print('response',response,'already linked to session:')
+				print(response.session)
+				print('current session found:',s)
+
+def _get_unlinked_sessions():
+	'''get those sessions that are not linked to response.
+	these are the sessions that have a text input.
+	'''
+	sessions = Session.objects.all()
+	unlinked_sessions = []
+	for session in sessions:
+		if not session.response_set.all(): unlinked_sessions.append(session)
+	return unlinked_sessions
+
+def read_text_input_responses_in_database():
+	''' read the response provide via keyboard into the database.'''
+	unlinked_sessions = _get_unlinked_sessions()
+	keyboard= Inputtype.objects.get(name = 'keyboard')
+	text_questions = extract_text.get_questions(condition='text')
+	for session in unlinked_sessions:
+		date = session.session_date
+		for i,question in enumerate(text_questions):
+			index = question.column_index
+			text = eval(session.values)[index]
+			if text == -77:continue
+			person = get_person(session.person)
+			response = _make_response(question,person,keyboard,'','',
+				date,session.row_index + 100000*i)
+			response.session = session
+			response.save()
+			make_text(text, None, response, input_type= keyboard)
+
 
 def open_nidi_xlsx():
 	return load_workbook('../NIDI-voice-recorded-interviews-audio-transcripts.xlsx')
@@ -76,9 +153,10 @@ def get_transcriber(name, human = False):
 	instance = save_model(Transcriber,{'name':name,'human':human},'name')
 	return instance
 
-def make_text(text, transcriber, response):
+def make_text(text, transcriber, response, input_type= None):
 	'''makes a new text instance based on a text and a transcriber.'''
 	d ={'text':text,'transcriber':transcriber,'response':response}
+	if input_type:d.update({'input_type':input_type})
 	instance = save_model(Text,d)
 	return instance
 	
