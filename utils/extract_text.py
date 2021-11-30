@@ -1,6 +1,12 @@
 from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
 
+def get_all_speech_and_keyboard_text():
+	speech_text = question2text()
+	keyboard_text = question2text(input_type='keyboard')
+	texts = list(speech_text) + list(keyboard_text)
+	return texts
+
 def get_questions(condition = 'audio', exclude_q8 = True):
 	return Question.objects.filter(number__gte = 9).filter(condition = condition)
 
@@ -38,24 +44,29 @@ def _handle_transcriber(transcriber):
 			print('using questfox as transcriber')
 	return transcriber
 
-def question2text(question = 'all', transcriber = 'questfox',exclude_q8 = True):
+def question2text(question = 'all', transcriber = 'questfox',exclude_q8 = True,
+	input_type= 'speech', only_include_ok = True):
 	'''get all text instance ordered by person.
 	by default excluded question 8 because this has no content (test sentence)
 	'''
 	question = _handle_question(question, exclude_q8)
 	transcriber = _handle_transcriber(transcriber)
 	t = Text.objects.filter(response__question__number__in = question)
-	t = t.filter(transcriber__name = transcriber)
+	if only_include_ok:t = t.filter(include = True)
+	if input_type == 'keyboard':t = t.filter(input_type__name= input_type)
+	else:t = t.filter(transcriber__name = transcriber)
 	return t.order_by('response__person__number')
 
 	
 def question2str(question='all',transcriber='questfox', exclude_q8 = True, 
 	show_person = True, show_question = True, show_transcriber = False,
-	show_audio_filename = False, show_audio_quality = False):
+	show_audio_filename = False, show_audio_quality = False, 
+	only_include_ok = True):
 	'''creates a str output of texts based on question set.
 	'''
 	output = []
-	texts = question2text(question,transcriber,exclude_q8)
+	texts = question2text(question,transcriber,exclude_q8,
+		only_include_ok = only_include_ok)
 	for text in texts:
 		line = []
 		line.append(text.text)
