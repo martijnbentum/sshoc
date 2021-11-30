@@ -140,6 +140,7 @@ class Text(models.Model):
 	transcriber= models.ForeignKey(Transcriber,**dargs)
 	response = models.ForeignKey(Response,**dargs)
 	input_type= models.ForeignKey(Inputtype,**dargs)
+	include = models.BooleanField(default=True)
 
 	def __repr__(self):
 		m = self.transcriber.__repr__() + ' | ' + self.text[:20] 
@@ -171,6 +172,25 @@ class Text(models.Model):
 	def word_count(self):
 		return len(self.text.split(' '))
 
+	def check_include(self,min_nwords = 3, only_contain_stop_words = None):
+		include = True
+		if not self.text: include = False
+		elif self.text.lower() == 'weet ik niet':include = False
+		elif self.word_count < min_nwords: include = False
+		elif check_only_contain_stop_words(self.text): include = False
+		if include != self.include:
+			self.include =include 
+			self.save()
+
+
+def check_only_contain_stop_words(words,stop_words= None):
+	if stop_words == None:
+		from stop_words import get_stop_words
+		stop_words = get_stop_words('dutch')
+	if type(words) == str: words = words.split(' ')
+	for word in words:
+		if word.lower() not in stop_words: return False
+	return True
 
 
 
