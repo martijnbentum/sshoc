@@ -141,6 +141,7 @@ class Text(models.Model):
 	response = models.ForeignKey(Response,**dargs)
 	input_type= models.ForeignKey(Inputtype,**dargs)
 	include = models.BooleanField(default=True)
+	content_words= models.TextField(default='',blank=True, null=True)
 
 	def __repr__(self):
 		m = self.transcriber.__repr__() + ' | ' + self.text[:20] 
@@ -171,6 +172,18 @@ class Text(models.Model):
 	@property
 	def word_count(self):
 		return len(self.text.split(' '))
+
+	def get_content_words(self, pos_tagging =None):
+		if not pos_tagging:from utils import pos_tagging as pt
+		else: pt = pos_tagging
+		if self.content_words == '':
+			print('pos tagging to find content words')
+			pt.text_to_content_words(self)
+
+	@property
+	def content_word_count(self):
+		if not self.content_words: self.get_content_words()
+		return len(self.content_words.split(' '))
 
 	def check_include(self,min_nwords = 3, only_contain_stop_words = None):
 		include = True
