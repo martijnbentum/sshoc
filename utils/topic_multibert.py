@@ -116,7 +116,7 @@ def make_clustered_texts(texts = None, n_dimensions = 5, min_cluster_size= 45):
 	d['topic'] = clustered_embeddings.labels_
 	temp = d.groupby(['topic'], as_index = False)
 	texts_per_topic = temp.agg({'text': ' '.join})
-	return texts_per_topic, d
+	return texts_per_topic, d, texts
 
 def tfidf(clustered_texts, ntexts):
 	'''compute tfidf over clustered texts.'''
@@ -167,4 +167,14 @@ def extract_topic_sizes(dataframe):
 		.rename({'topic':'topic','text':'size'},axis='columns')
 		.sort_values('size',ascending=False))
 	return topic_sizes
+
+def make():
+	tpt,d, texts = tm.make_clustered_texts(min_cluster_size=15)
+
+def topnwords_to_wordlists(top_n_words,topic_sizes, n = 10):
+	wordlists = []
+	for topic in topic_sizes.topic[1:n+1]:
+		wordlists.append(' '.join([x[0] for x in top_n_words[topic][:n]]))
+	return wordlists
+
 
