@@ -1,9 +1,9 @@
 from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
 
-def get_all_speech_and_keyboard_text():
-	speech_text = question2text()
-	keyboard_text = question2text(input_type='keyboard')
+def get_all_speech_and_keyboard_text(question = 'all', transcriber = 'questfox'):
+	speech_text = question2text(question = question, transcriber = transcriber)
+	keyboard_text = question2text(input_type='keyboard', question = question)
 	texts = list(speech_text) + list(keyboard_text)
 	return texts
 
@@ -49,7 +49,9 @@ def question2text(question = 'all', transcriber = 'questfox',exclude_q8 = True,
 	'''get all text instance ordered by person.
 	by default excluded question 8 because this has no content (test sentence)
 	'''
+	print('q',question)
 	question = _handle_question(question, exclude_q8)
+	print('q',question)
 	transcriber = _handle_transcriber(transcriber)
 	t = Text.objects.filter(response__question__number__in = question)
 	if only_include_ok:t = t.filter(include = True)
@@ -85,4 +87,36 @@ def get_all_text_for_question(number, transcriber = 'questfox'):
 def get_all_text_for_all_questions(transcriber = 'questfox'):
 	return question2str(transcriber = transcriber, show_person=False,
 		show_question=False)
+
+def get_questions(questions = []):
+	if type(questions) == int: questions = [questions]
+	return Question.objects.filter(number__in = questions)
+	
+def group_questions():
+	d={'democracy':[13,14,15,16,17,18]}
+	d.update({'europe':[20,21,22,23,24,25]})
+	d.update({'trust':[27,28,29,30,31,32]})
+	d.update({'marriage':[34,35,36,41,42,43,37,38,39,44,45,46]})
+	o = {}
+	for key,value in d.items():
+		o[key] = get_questions(value)
+	return o
+
+def sentiment_analysis_questions(numbers = True):
+	q = [13,15,20,22,29,34,16,18,23,25,32,37]
+	if not numbers:return get_questions(q)
+	return q
+
+
+def get_sentiment_text(input_type = 'both',transcriber='questfox'):
+	questions = sentiment_analysis_questions()
+	print(questions)
+	if input_type == 'both':
+		texts = get_all_speech_and_keyboard_text(question = questions, 
+			transcriber = transcriber)
+	else: texts = question2text(question=questions,transcriber=transcriber)
+	return texts
+	
+
+	
 	
