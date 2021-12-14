@@ -107,9 +107,9 @@ def make_clustered_texts(texts = None, n_dimensions = 5, min_cluster_size= 45):
 		umap_embeddings = load_text_embeddings_umap()
 		d = pd.read_pickle('text_embeddings_dataframe.pkl')
 	else:
-		embeddings, texts = text_embeddings(texts)
-		umap_embeddings=reduce_dimension_embeddings_umap(
-			n_dimensions =n_dimensions)
+		embeddings, texts = texts_to_embeddings(texts)
+		umap_embeddings=reduce_dimension_embeddings_umap(embeddings =embeddings,
+			n=n_dimensions)
 		d = texts_to_dataframe(texts)
 	clustered_embeddings=cluster(umap_embeddings,
 		min_cluster_size= min_cluster_size)
@@ -118,7 +118,7 @@ def make_clustered_texts(texts = None, n_dimensions = 5, min_cluster_size= 45):
 	texts_per_topic = temp.agg({'text': ' '.join})
 	return texts_per_topic, d, texts
 
-def tfidf(clustered_texts, ntexts):
+def make_tfidf(clustered_texts, ntexts):
 	'''compute tfidf over clustered texts.'''
 	#create an object that can convert texts into bag of words
 	dutch = get_stop_words('dutch')
@@ -168,13 +168,37 @@ def extract_topic_sizes(dataframe):
 		.sort_values('size',ascending=False))
 	return topic_sizes
 
-def make():
-	tpt,d, texts = tm.make_clustered_texts(min_cluster_size=15)
+def make(texts = None, min_cluster_size = 15,n_dimensions = 5,n_words_top=20):
+	tpt,d, texts = make_clustered_texts(texts = texts,
+		min_cluster_size=min_cluster_size)
+	tf_idf, count = make_tfidf(tpt.text.values,len(texts))
+	top_n_words = extract_top_n_words_per_topic(tf_idf, count, tpt, n = n_words_top)
+	topic_sizes = extract_topic_sizes(d)
+	return topic_sizes, top_n_words,tf_idf,count,d,tpt,texts
 
 def topnwords_to_wordlists(top_n_words,topic_sizes, n = 10):
 	wordlists = []
 	for topic in topic_sizes.topic[1:n+1]:
 		wordlists.append(' '.join([x[0] for x in top_n_words[topic][:n]]))
 	return wordlists
+
+def topic_modelling_for_grouped_questions():
+	from . import extract_text
+	from .color import color
+	import os
+	d = extract_text.get_grouped_question_texts()
+	output = {}
+	os.system('clear')
+	for key, value in d.items():
+		print(color(key,'underline'))
+		texts = value['texts']
+		print(color('n texts: ' +str(len(texts)),'blue'))
+		topic_sizes, top_n_words,tf_idf,count,d,tpt, texts = make(texts=texts)
+		wordlists = topnwords_to_wordlists(top_n_words,topic_sizes)
+		output[key]=[topic_sizes,top_n_words,tf_idf,count,d,tpt,texts,wordlists]
+		print('\n'.join(wordlists))
+		print(color('-'*90,'blue'))
+	return output
+
 
 
