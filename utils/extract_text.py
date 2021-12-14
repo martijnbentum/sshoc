@@ -92,18 +92,34 @@ def get_questions(questions = []):
 	if type(questions) == int: questions = [questions]
 	return Question.objects.filter(number__in = questions)
 	
-def group_questions():
+def group_questions(numbers=True):
 	d={'democracy':[13,14,15,16,17,18]}
 	d.update({'europe':[20,21,22,23,24,25]})
 	d.update({'trust':[27,28,29,30,31,32]})
 	d.update({'marriage':[34,35,36,41,42,43,37,38,39,44,45,46]})
+	if numbers: return d
 	o = {}
 	for key,value in d.items():
 		o[key] = get_questions(value)
 	return o
 
+def get_grouped_question_texts(input_type = 'both',transcriber= 'questfox'):
+	d = group_questions()
+	o = {}
+	for key, value in d.items():
+		o[key] = {'questions':value}
+		if input_type == 'both':
+			texts= get_all_speech_and_keyboard_text(question=value,
+				transcriber=transcriber)
+		else:
+			texts=question2text(question=value,transcriber=transcriber,
+				input_type = input_type)
+		o[key].update({'texts':texts})
+	return o
+	
+
 def sentiment_analysis_questions(numbers = True):
-	q = [13,15,20,22,29,34,16,18,23,25,32,37]
+	q = [13,15,20,22,29,16,18,23,25,32]
 	if not numbers:return get_questions(q)
 	return q
 
@@ -114,9 +130,24 @@ def get_sentiment_text(input_type = 'both',transcriber='questfox'):
 	if input_type == 'both':
 		texts = get_all_speech_and_keyboard_text(question = questions, 
 			transcriber = transcriber)
-	else: texts = question2text(question=questions,transcriber=transcriber)
+	else: 
+		texts = question2text(question=questions,transcriber=transcriber,
+			input_type = input_type)
 	return texts
 	
+def make_sentiment_file():
+	texts = get_sentiment_text()
+	output = []
+	for x in texts:
+		t = x.text.lower()
+		if t == 'ik weet het niet' or t == 'ik weet niet': continue
+		line = [str(x.pk),x.text,x.response.question.title,str(x.question)]
+		output.append('\t'.join(line))
+	with open('../sentiment_responses.txt','w') as fout:
+		fout.write('\n'.join(output))
+	return output
+	
+		
 
 	
 	
