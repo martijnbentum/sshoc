@@ -5,6 +5,7 @@ def get_all_speech_and_keyboard_text(question = 'all', transcriber = 'questfox')
 	speech_text = question2text(question = question, transcriber = transcriber)
 	keyboard_text = question2text(input_type='keyboard', question = question)
 	texts = list(speech_text) + list(keyboard_text)
+	texts = [t for t in texts if t.text]
 	return texts
 
 def get_questions(condition = 'audio', exclude_q8 = True):
@@ -49,7 +50,7 @@ def question2text(question = 'all', transcriber = 'questfox',exclude_q8 = True,
 	'''get all text instance ordered by person.
 	by default excluded question 8 because this has no content (test sentence)
 	'''
-	print('q',question)
+	# print('q',question)
 	question = _handle_question(question, exclude_q8)
 	print('q',question)
 	transcriber = _handle_transcriber(transcriber)
@@ -124,7 +125,7 @@ def sentiment_analysis_questions(numbers = True):
 	return q
 
 
-def get_sentiment_text(input_type = 'both',transcriber='questfox'):
+def get_sentiment_text(input_type = 'both',transcriber='manual transcription'):
 	questions = sentiment_analysis_questions()
 	print(questions)
 	if input_type == 'both':
