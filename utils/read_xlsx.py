@@ -212,6 +212,18 @@ def read_in_text_audio_matching(clean_db = False):
 			texts = [make_text(line[5],qf, response)]
 			print('could not find:',audio_fn)
 
+def add_manual_transcriptions():
+	manual_transcriptions = open('../manual_text').read().split('\n')
+	manual = Transcriber.objects.get(name='manual transcription')
+	for line in manual_transcriptions:
+		if not line or len(line.split('\t')) != 2:
+			print(line)
+			continue
+		audio_filename, text = line.split('\t')	
+		response = Response.objects.get(audio_filename=audio_filename)
+		make_text(text,manual,response)
+
+
 			
 	
 	
