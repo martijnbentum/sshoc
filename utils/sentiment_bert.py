@@ -18,6 +18,10 @@ def apply_pipeline(t, pipeline = None):
 	if pipeline == None: pipeline = load_pipeline()
 	return pipeline(t)
 
+def str2label(text,pipeline = None):
+	o = apply_pipeline(text, pipeline)
+	return [text] + list(o[0].values())
+
 def text2label(text, pipeline = None):
 	o = apply_pipeline(text.text, pipeline)
 	return [text] + list(o[0].values())
