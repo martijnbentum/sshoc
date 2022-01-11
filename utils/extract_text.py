@@ -1,5 +1,6 @@
 from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
+from jiwer import wer
 
 def get_all_speech_and_keyboard_text(question = 'all', transcriber = 'questfox'):
 	speech_text = question2text(question = question, transcriber = transcriber)
@@ -104,8 +105,20 @@ def group_questions(numbers=True):
 		o[key] = get_questions(value)
 	return o
 
+def group_questions_speech(numbers=True):
+	d={'democracy':[13,14,15]}
+	d.update({'europe':[20,21,22]})
+	d.update({'trust':[27,28,29]})
+	d.update({'marriage':[34,35,36,41,42,43]})
+	if numbers: return d
+	o = {}
+	for key,value in d.items():
+		o[key] = get_questions(value)
+	return o
+
 def get_grouped_question_texts(input_type = 'both',transcriber= 'questfox'):
-	d = group_questions()
+	if input_type == 'speech':d = group_questions_speech()
+	else: d = group_questions()
 	o = {}
 	for key, value in d.items():
 		o[key] = {'questions':value}
@@ -147,8 +160,49 @@ def make_sentiment_file():
 	with open('../sentiment_responses.txt','w') as fout:
 		fout.write('\n'.join(output))
 	return output
+
+def match_text_on_reponse(text, text_set):
+	'''find a matching text in a list of texts.'''
+	for x in text_set:
+		if x.response.pk == text.response.pk: return x
+	return None
 	
+def match_texts(text_set1, text_set2):
+	'''matches two sets of texts on response id, for matching texts 
+	from different transcribers. Alternative and better option is to
+	use the text_set property on the reponse object see text_to_wer'''
+	pks = []
+	matched_text1, matched_text2, non_matched1, non_matched2 = [], [], [], []
+	for text in text_set1:
+		if not text.text: non_matched1.append(text)
+		match = match_text_on_reponse(text,text_set2)
+		if match == None: non_matched1.append(text)
+		else:
+			matched_text1.append(text)
+			matched_text2.append(match)
+			pks.append(text.response.pk)
+	for text in text_set2:
+		if text.response.pk not in pks: non_matched2.append(text)
+	return matched_text1, matched_text2, non_matched1, non_matched2
 		
+def texts_to_wer(questions = 'all', ground_truth = 'manual transcription',
+	asr = 'questfox'):
+	'''compute word error rate for a specific asr system'''
+	ground_truth_texts = question2text(question=questions, 
+		transcriber= ground_truth)
+	gt_texts, asr_texts,nm1,error = [], [], [], []
+	for text in ground_truth_texts:
+		try:other_text = text.response.text_set.get(transcriber__name = asr)
+		except:
+			nm1.append(text)
+			continue
+		if not text.text or not other_text.text: 
+			error.append([text,other_text])
+			continue
+		gt_texts.append(text.text)
+		asr_texts.append(other_text.text)
+	word_error_rate = wer(gt_texts,asr_texts)
+	return word_error_rate, gt_texts, asr_texts, nm1, error
 
 	
 	
