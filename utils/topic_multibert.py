@@ -86,6 +86,7 @@ def texts_to_dataframe(texts):
 	d['input_type'] = [t.input_type.name for t in texts]
 	d['q'] = [t.response.question.number for t in texts]
 	d['question'] = [t.response.question.title for t in texts]
+	d['response_pk'] = [t.response.pk for t in texts]
 	return d
 
 def _make_defaults(save=False):
