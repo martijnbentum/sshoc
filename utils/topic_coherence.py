@@ -321,12 +321,45 @@ def match_topics_grouped_question_automatic_manual(nwords=20):
 	md = extract_text.get_grouped_question_texts(transcriber='manual transcription')
 	o = {}
 	for key in ad.keys():
-		automatic_texts= ad[key]['texts']
-		manual_texts = md[key]['texts']
+		print(key)
+		automatic_texts= [text for text in ad[key]['texts'] if text.text]
+		manual_texts = [text for text in md[key]['texts'] if text.text]
 		atg = Text_group(automatic_texts,name='automatic-'+key,nwords=nwords)
 		mtg = Text_group(manual_texts,name='manual-'+key,nwords=nwords)
 		mtg.match(atg,nwords = nwords)
 		print(mtg)
 		o[key] = mtg
 	return o
+
+#compute percentage overlap of the clustering of texts
+
+def _make_key_map(result):
+	d = {-1:-1}
+	for key in result.topics.keys():
+		d[key] = result.topics[key].other_key
+	return d
+
+def _make_response_map(result):
+	d = {}
+	for i, response_pk in enumerate(result.d.response_pk):
+		d[response_pk] = result.d.topic[i]
+	return d
+
+def _manual_text_group_to_perc_overlap_clustered_texts(mtg):
+	key_map = _make_key_map(mtg.result)
+	manual_response_to_topic_dict = _make_response_map(mtg.result)
+	for key,value in manual_response_to_topic_dict.items():
+		manual_response_to_topic_dict[key] = key_map[value]
+	automatic_response_to_topic_dict = _make_response_map(mtg.other_result)
+	correct, incorrect = 0,0
+	misses = []
+	for key, manual_topic in  manual_response_to_topic_dict.items():
+		if key not in automatic_response_to_topic_dict.keys():
+			misses.append(key)
+			continue
+		automatic_topic = automatic_response_to_topic_dict[key]
+		if automatic_topic == manual_topic: correct += 1
+		else: incorrect +=1
+	perc_correct = round(correct / (correct + incorrect) * 100, 2)
+	return perc_correct, correct, incorrect, misses
 
