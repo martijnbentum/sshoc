@@ -339,18 +339,20 @@ def _make_key_map(result):
 		d[key] = result.topics[key].other_key
 	return d
 
-def _make_response_map(result):
+def _make_response_map(result, only_speech = True):
 	d = {}
 	for i, response_pk in enumerate(result.d.response_pk):
+		if only_speech and result.d.input_type[i] != 'speech': continue
 		d[response_pk] = result.d.topic[i]
 	return d
 
-def _manual_text_group_to_perc_overlap_clustered_texts(mtg):
+def _manual_text_group_to_perc_overlap_clustered_texts(mtg,only_speech = True):
 	key_map = _make_key_map(mtg.result)
-	manual_response_to_topic_dict = _make_response_map(mtg.result)
+	manual_response_to_topic_dict = _make_response_map(mtg.result,only_speech)
 	for key,value in manual_response_to_topic_dict.items():
 		manual_response_to_topic_dict[key] = key_map[value]
-	automatic_response_to_topic_dict = _make_response_map(mtg.other_result)
+	x = only_speech
+	automatic_response_to_topic_dict=_make_response_map(mtg.other_result,x)
 	correct, incorrect = 0,0
 	misses = []
 	for key, manual_topic in  manual_response_to_topic_dict.items():
@@ -362,4 +364,15 @@ def _manual_text_group_to_perc_overlap_clustered_texts(mtg):
 		else: incorrect +=1
 	perc_correct = round(correct / (correct + incorrect) * 100, 2)
 	return perc_correct, correct, incorrect, misses
+
+def compute_perc_overlap(o = None):
+	if not o: o = match_topics_grouped_question_automatic_manual()
+	for key, value in o.items():
+		print(key)
+		do = _manual_text_group_to_perc_overlap_clustered_texts
+		perc_correct, correct, incorrect, misses = do(value)
+		print('overlap only speech input answers:', perc_correct,correct+incorrect)
+		do = _manual_text_group_to_perc_overlap_clustered_texts
+		perc_correct, correct, incorrect, misses = do(value, False)
+		print('overlap all answers:',perc_correct,correct+incorrect)
 
