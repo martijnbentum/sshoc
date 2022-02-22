@@ -119,6 +119,10 @@ class Response(models.Model):
 	def __str__(self):
 		return self.__repr__()
 
+	@property
+	def transcribers(self):
+		return [t.transcriber.name for t in self.text_set.all() if t.transcriber]
+
 class Variable(models.Model):
 	'''gives some information about the questions.'''
 	name = models.CharField(max_length=30,default ='')
