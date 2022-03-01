@@ -14,9 +14,10 @@ from texts.models import Response, Transcriber, Text
 path = '../wav2vec2_cache/'
 
 class Decoder:
-	def __init__(self, recognizer_dir = '', use_cuda = False):
+	def __init__(self, recognizer_dir = '', use_cuda = False, word_list=None):
 		if not recognizer_dir: recognizer_dir = path
 		if not recognizer_dir.endswith('/'): recognizer_dir += '/'
+		self.word_list = word_list
 		self.recognizer_dir = recognizer_dir
 		self.logits_dir = recognizer_dir +'logits/'
 		self.use_cuda = use_cuda
@@ -40,6 +41,10 @@ class Decoder:
 
 	def lm_logits2text(self,logits):
 		if 'cuda' in logits.__repr__(): logits = logits.cpu()
+		if self.word_list:
+			return self.processor.batch_decode(logits.detach().numpy(),
+				hotwords = self.word_list,
+				num_processes=1).text
 		return self.processor.batch_decode(logits.detach().numpy(),
 			num_processes=1).text
 
