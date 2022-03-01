@@ -9,6 +9,67 @@ import os
 import sys
 import argparse
 
+def chunk2duration(chunk, sr = 16000):
+	st, et = chunk
+	duration =  (et-st) / sr
+	return duration
+
+def longest_chunk(chunks, sr = 16000):
+	longest = 0
+	longest_index = None
+	for i,chunk in enumerate(chunks):
+		duration = chunk2duration(chunk,sr)
+		if duration > longest: 
+			longest = duration
+			longest_index = i
+	return longest, longest_index
+
+def shortest_chunk(chunks, sr = 16000):
+	shortest = 10000000000000
+	shortest_index = None
+	for i,chunk in enumerate(chunks):
+		duration = chunk2duration(chunk,sr)
+		if duration < shortest: 
+			shortest= duration
+			shortest_index = i
+	return shortest, shortest_index
+
+def _slice_audio(audio, maximum_slice_duration = 60, 
+	minimum_silence_duration = 1, sr = 16000):
+	frame_length = duration2nframes(minimum_silence_duration,sr)
+	chunks=librosa.effects.split(audio, frame_length=frame_length,  
+		top_db=30, ref=make_ref)
+	longest_duration,_ = longest_chunk(chunks)
+	if not longest_duration > maximum_slice_duration: 
+		return chunks, minimum_silence_duration
+	return _slice_audio(audio, 
+		maximum_slice_duration =maximum_slice_duration,
+		minimum_silence_duration = minimum_silence_duration * 0.9,
+		sr =sr) 
+
+def splice_audio(filename, maximum_slice_duration = 60,
+	minimum_silence_duration = .6, sr = 16000):
+	audio, sr = load_audio(filename)
+	chunks, minimum_silence_duration = _slice_audio(audio,
+		maximum_slice_duration,minimum_silence_duration,sr)
+	output = []
+	duration, st,et = 0, 0, chunks[0][-1]
+	for i,chunk in enumerate(chunks):
+		new_et = chunk[-1]
+		current_chunk_duration = chunk2duration(chunk)
+		duration = chunk2duration([st,new_et])
+		# print(i,current_chunk_duration, duration,chunk,st,et)
+		if duration > maximum_slice_duration:
+			# print('appending:',st,et,duration,(et-st)/16000)
+			output.append(np.asarray([st,et]))
+			st, et = chunk
+		else: 
+			et = chunk[-1]
+		if i == len(chunks) -1:
+			output.append(np.asarray([st,et]))
+	return np.asarray(output)
+
+	
 def load_audio(filename, sample_rate=None):
 	np_array, sample_rate = librosa.load(filename,sr=sample_rate)
 	return np_array, sample_rate
