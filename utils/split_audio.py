@@ -49,7 +49,7 @@ def _slice_audio(audio, maximum_slice_duration = 60,
 
 def splice_audio(filename, maximum_slice_duration = 60,
 	minimum_silence_duration = .6, sr = 16000):
-	audio, sr = load_audio(filename)
+	audio, sr = load_audio(filename, sr)
 	chunks, minimum_silence_duration = _slice_audio(audio,
 		maximum_slice_duration,minimum_silence_duration,sr)
 	output = []
