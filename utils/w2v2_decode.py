@@ -23,6 +23,8 @@ class Decoder:
 		self.use_cuda = use_cuda
 		self.load()
 		
+	def set_word_list(self,word_list):
+		self.word_list = word_list
 
 	def load(self):
 		self.processor = wnl.load_processor()
