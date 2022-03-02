@@ -34,12 +34,14 @@ def save_transcription(name,transcription):
 def check_chunk_length():
 	return
 
-def decode_audio(decoder,output_directory = None, overwrite = False):
+def decode_audio(decoder,output_directory = None, overwrite = False, 
+	audio_filenames = None):
+	if not audio_filenames: audio_filenames = audio_files
 	if not output_directory: output_directory = output_dir
 	if not output_directory.endswith('/'): output_directory += '/'
 	print('saving decoding output to:',output_directory)
-	for i,filename in enumerate(audio_files):
-		print(i,filename,len(audio_files))
+	for i,filename in enumerate(audio_filenames):
+		print(i,filename,len(audio_filenames))
 		name = output_directory+filename.split('/')[-1].replace('.wav','.txt')
 		if os.path.isfile(name):
 			print(name, 'already exists, set overwrite =True to overwrite it')
@@ -56,11 +58,11 @@ def decode_audio(decoder,output_directory = None, overwrite = False):
 				print('transcription:',text[:60],'[...]')
 		save_transcription(name,'\n'.join(texts))
 
-def get_ground_truth_and_predictions(directory = None):
-	if not directory: directory = output_dir
+def get_ground_truth_and_predictions(output_directory = None):
+	if not output_directory: output_directory = output_dir
 	if not output_directory.endswith('/'): output_directory += '/'
 	text = load_text()
-	pred_filenames = glob.glob(output_dir + '*.txt')
+	pred_filenames = glob.glob(output_directory + '*.txt')
 	gt,pred, names = [], [], []
 	for line in text:
 		gt_transcription, name = line.split(' (')
@@ -75,7 +77,7 @@ def get_ground_truth_and_predictions(directory = None):
 	return gt, pred, names
 
 
-def compute_wer():
-	gt, pred,names = get_ground_truth_and_predictions()
+def compute_wer(output_directory = None):
+	gt, pred,names = get_ground_truth_and_predictions(output_directory)
 	word_error_rate = wer(gt,pred)
 	return word_error_rate, gt,pred,names
