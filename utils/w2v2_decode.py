@@ -2,6 +2,7 @@ import torch
 from transformers import Wav2Vec2ForCTC
 from transformers import Wav2Vec2Processor
 from transformers import Wav2Vec2ProcessorWithLM
+from utils.w2v2_nl_lm import response2audio
 
 from jiwer import wer
 import os
@@ -14,9 +15,11 @@ from texts.models import Response, Transcriber, Text
 path = '../wav2vec2_cache/'
 
 class Decoder:
-	def __init__(self, recognizer_dir = '', use_cuda = False, word_list=None):
+	def __init__(self, recognizer_dir = '', use_cuda = False, use_lm = True, 
+		word_list=None):
 		if not recognizer_dir: recognizer_dir = path
 		if not recognizer_dir.endswith('/'): recognizer_dir += '/'
+		self.use_lm = use_lm
 		self.word_list = word_list
 		self.recognizer_dir = recognizer_dir
 		self.logits_dir = recognizer_dir +'logits/'
@@ -27,7 +30,8 @@ class Decoder:
 		self.word_list = word_list
 
 	def load(self):
-		self.processor = wnl.load_processor()
+		if self.use_lm: self.processor = wnl.load_processor_with_lm()
+		else:self.processor = wnl.load_processor()
 		self.model = wnl.load_model()
 		if self.use_cuda:
 			self.model = self.model.to("cuda")
@@ -61,7 +65,9 @@ class Decoder:
 
 	def audio2text(self,audio):
 		logits = self.audio2logits(audio)
-		return self.lm_logits2text(logits)
+		if self.use_lm: self.lm_logits2text(logits)
+		labels = self._logits2labels(logits)
+		return self.processor.decode(labels)
 
 
 def load_inputs(audio,processor):
@@ -81,15 +87,17 @@ def get_responses():
 	responses =responses.exclude(question__number=8)
 	return responses
 		
-def decode_responses(decoder):
+def decode_responses(decoder, use_lm = True):
 	responses = get_responses()
 	nresponses = responses.count()
-	transcriber = Transcriber.objects.get(name="wav2vec2 fremy lm")
-	for i,reponse in enumerate(responses):
-		if 'wav2vec2 fremy lm' in reponse.transcribers:
-			print('already decoded:',reponse,'skipping',i,nresponses)
+	if use_lm: transcriber = Transcriber.objects.get(name="wav2vec2 fremy lm")
+	else: transcriber = Transcriber.objects.get(name="wav2vec2 fremy")
+	print('saving with transcriber name:',transcriber.name)
+	for i,response in enumerate(responses):
+		if transcriber.name in response.transcribers:
+			print('already decoded:',response,'skipping',i,nresponses)
 			continue
-		print('decodeding:',reponse,i,nresponses)
+		print('decodeding:',response,i,nresponses)
 		audio = response2audio(response)
 		str_text = decoder.audio2text(audio)[0]
 		text = Text(text=str_text,response = response, transcriber = transcriber)
