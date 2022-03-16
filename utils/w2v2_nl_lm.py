@@ -13,8 +13,15 @@ recognizer_dir = '../wav2vec2_cache/'
 wav_dir = '../../wav_16k/'
 wav_fn = glob.glob('*.wav')
 
-def load_processor():
+def load_processor_with_lm():
 	processor = Wav2Vec2ProcessorWithLM.from_pretrained(
+		'FremyCompany/xls-r-2b-nl-v2_lm-5gram-os',
+		cache_dir = cache_dir
+	)
+	return processor
+
+def load_processor():
+	processor = Wav2Vec2Processor.from_pretrained(
 		'FremyCompany/xls-r-2b-nl-v2_lm-5gram-os',
 		cache_dir = cache_dir
 	)
