@@ -94,12 +94,13 @@ def decode_responses(decoder, use_lm = True):
 	else: transcriber = Transcriber.objects.get(name="wav2vec2 fremy")
 	print('saving with transcriber name:',transcriber.name)
 	for i,response in enumerate(responses):
-		if transcriber.name in response.transcribers:
+		if not overwrite and transcriber.name in response.transcribers:
 			print('already decoded:',response,'skipping',i,nresponses)
 			continue
 		print('decodeding:',response,i,nresponses)
 		audio = response2audio(response)
-		str_text = decoder.audio2text(audio)[0]
+		if use_lm: str_text = decoder.audio2text(audio)[0]
+		else: str_text = decoder.audio2text(audio)
 		text = Text(text=str_text,response = response, transcriber = transcriber)
 		text.save()
 
