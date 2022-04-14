@@ -104,9 +104,10 @@ def decode_responses(decoder, use_lm = True):
 		text = Text(text=str_text,response = response, transcriber = transcriber)
 		text.save()
 
-def computer_wer():
+def computer_wer(with_lm = True):
 	responses = get_responses()
-	wav2vec2 = Transcriber.objects.get(name='wav2vec2 fremy lm')
+	if with_lm: wav2vec2 = Transcriber.objects.get(name='wav2vec2 fremy lm')
+	else: wav2vec2 = Transcriber.objects.get(name='wav2vec2 fremy')
 	manual = Transcriber.objects.get(name='manual transcription')
 	pred,gt,error,empty = [], [],[],[]
 	for response in responses:
