@@ -3,12 +3,42 @@ from utils.split_audio import load_audio, splice_audio
 from utils.w2v2_decode import Decoder
 from jiwer import wer
 import os
+from utils import wav2vec2_add_lm as wal
 
 directory = '/vol/tensusers4/ctejedor/MJ/'
 audio_directory = directory + 'audio/'
 lexicon_directory = directory + 'lexicons/'
 audio_files = glob.glob(audio_directory + '*.wav')
 output_dir = '../homed/'
+lm_directory = '/vol/tensusers4/ctejedor/MJ/LM/'
+path = '../homed_lm_recognizers/base/'
+recognizers_base_dir= '../homed_lm_recognizers/'
+
+def get_lm_filenames(lm_directory = lm_directory):
+	lm_filenames = []
+	lm_filenames.extend(glob.glob(lm_directory + '*.lm'))
+	lm_filenames.extend(glob.glob(lm_directory + '*.arpa'))
+	return lm_filenames
+
+def _extract_name(path):
+	name = path.split('/')[-1].split('.')[0]
+	if not name: raise ValueError('path:',path,'could not extract name:',name)
+	return name
+
+def make_processors_with_homed_lm(input_directory = path, lm_filenames = None):
+	if not os.path.isdir(recognizers_base_dir):os.mkdir(recognizers_base_dir)
+	if not lm_filenames: lm_filenames = get_lm_filenames()
+	for lm_filename in lm_filenames:
+		name = _extract_name(lm_filename)
+		output_directory = recognizers_base_dir + name + '/'
+		print(name,lm_filename,output_directory)
+		if os.path.isdir(output_directory): 
+			print(output_directory,'already exists skipping')
+			continue
+		wal.make_processor_with_lm(input_recognizer_dir= input_directory, 
+			output_recognizer_dir= output_directory, lm_filename = lm_filename)
+		print('made processor with lm:',lm_filename)
+		
 
 def load_text():
 	return [x for x in open(directory + 'text.txt').read().split('\n') if x]
