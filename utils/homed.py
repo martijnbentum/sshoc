@@ -11,7 +11,7 @@ lexicon_directory = directory + 'lexicons/'
 audio_files = glob.glob(audio_directory + '*.wav')
 output_dir = '../homed/'
 lm_directory = '/vol/tensusers4/ctejedor/MJ/LM/'
-path = '../homed_lm_recognizers/base/'
+path = '../homed_lm_recognizers/base_minimal/'
 recognizers_base_dir= '../homed_lm_recognizers/'
 
 def get_lm_filenames(lm_directory = lm_directory):
@@ -65,7 +65,7 @@ def check_chunk_length():
 	return
 
 def decode_audio(decoder,output_directory = None, overwrite = False, 
-	audio_filenames = None):
+	audio_filenames = None, slice_duration = 60):
 	if not audio_filenames: audio_filenames = audio_files
 	if not output_directory: output_directory = output_dir
 	if not output_directory.endswith('/'): output_directory += '/'
@@ -76,7 +76,7 @@ def decode_audio(decoder,output_directory = None, overwrite = False,
 		if os.path.isfile(name):
 			print(name, 'already exists, set overwrite =True to overwrite it')
 			continue
-		audio_chunks= splice_audio(filename)
+		audio_chunks= splice_audio(filename, maximum_slice_duration = slice_duration)
 		texts = []
 		for st,et in audio_chunks:
 			print('duration:',(et-st)/16000)
