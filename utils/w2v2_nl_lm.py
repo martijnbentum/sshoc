@@ -13,27 +13,36 @@ recognizer_dir = '../wav2vec2_cache/'
 wav_dir = '../../wav_16k/'
 wav_fn = glob.glob('*.wav')
 
-def load_processor_with_lm():
+def load_processor_with_lm(recognizer_dir):
+	processor = Wav2Vec2ProcessorWithLM.from_pretrained(recognizer_dir)
+	'''
 	processor = Wav2Vec2ProcessorWithLM.from_pretrained(
 		'FremyCompany/xls-r-2b-nl-v2_lm-5gram-os',
 		cache_dir = cache_dir
 	)
+	'''
 	return processor
 
-def load_processor():
+def load_processor(recognizer_dir):
+	processor = Wav2Vec2Processor.from_pretrained(recognizer_dir)
+	'''
 	processor = Wav2Vec2Processor.from_pretrained(
 		'FremyCompany/xls-r-2b-nl-v2_lm-5gram-os',
 		cache_dir = cache_dir
 	)
+	'''
 	return processor
 
-def load_model():
-	processor = load_processor()
+def load_model(recognizer_dir):
+	processor = load_processor(recognizer_dir)
+	model = Wav2Vec2ForCTC.from_pretrained(recognizer_dir)
+	'''
 	model = Wav2Vec2ForCTC.from_pretrained(
 		'FremyCompany/xls-r-2b-nl-v2_lm-5gram-os',
 		cache_dir = cache_dir
 	)
 	# model.freeze_feature_extractor() not sure if needed if not finetuning
+	'''
 	return model
 
 def load_decoder():
