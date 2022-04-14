@@ -30,9 +30,11 @@ class Decoder:
 		self.word_list = word_list
 
 	def load(self):
-		if self.use_lm: self.processor = wnl.load_processor_with_lm()
-		else:self.processor = wnl.load_processor()
-		self.model = wnl.load_model()
+		if self.use_lm: 
+			self.processor = wnl.load_processor_with_lm(self.recognizer_dir)
+		else:
+			self.processor = wnl.load_processor(self.recognizer_dir)
+		self.model = wnl.load_model(self.recognizer_dir)
 		if self.use_cuda:
 			self.model = self.model.to("cuda")
 
@@ -65,7 +67,7 @@ class Decoder:
 
 	def audio2text(self,audio):
 		logits = self.audio2logits(audio)
-		if self.use_lm: self.lm_logits2text(logits)
+		if self.use_lm: return self.lm_logits2text(logits)
 		labels = self._logits2labels(logits)
 		return self.processor.decode(labels)
 
