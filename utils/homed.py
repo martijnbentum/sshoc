@@ -31,13 +31,37 @@ def make_processors_with_homed_lm(input_directory = path, lm_filenames = None):
 	for lm_filename in lm_filenames:
 		name = _extract_name(lm_filename)
 		output_directory = recognizers_base_dir + name + '/'
-		print(name,lm_filename,output_directory)
+		print('\n---\n',name,lm_filename,output_directory)
 		if os.path.isdir(output_directory): 
 			print(output_directory,'already exists skipping')
 			continue
 		wal.make_processor_with_lm(input_recognizer_dir= input_directory, 
 			output_recognizer_dir= output_directory, lm_filename = lm_filename)
 		print('made processor with lm:',lm_filename)
+		print('making symbolic link to pythorch_model.bin')
+		m = 'ln -s ../base/pytorch_model.bin ' +output_directory 
+		m += 'pytorch_model.bin'
+		print(m)
+		os.system(m)
+		print('done')
+
+def _get_homed_lm_directories():
+	directories =glob.glob('../homed_lm_recognizers/*')
+	output = []
+	for directory in directories:
+		if not os.path.isdir(directory): continue
+		if 'base_minimal' in directory: continue
+		output.append(directory)
+	return output
+		
+
+def test_decoder_with_homed_lm(directories):
+	for directory in directories:
+		print('load decoder from directory:',directory)
+		decoder = Decoder(use_cuda=False,use_lm=True, recognizer_dir=directory)
+		print('decoding audio')
+		decode_audio(decoder,directory,audio_files,slice_duration=10)
+		print('done with directory:',directory)
 		
 
 def load_text():
