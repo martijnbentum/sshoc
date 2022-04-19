@@ -50,7 +50,7 @@ def _get_homed_lm_directories():
 	output = []
 	for directory in directories:
 		if not os.path.isdir(directory): continue
-		if 'base_minimal' in directory: continue
+		if 'base' in directory: continue
 		output.append(directory)
 	return output
 		
@@ -135,3 +135,24 @@ def compute_wer(output_directory = None):
 	gt, pred,names = get_ground_truth_and_predictions(output_directory)
 	word_error_rate = wer(gt,pred)
 	return word_error_rate, gt,pred,names
+
+def _show_results(o):
+	for k in o.keys():
+		print(k.split('/')[-1].ljust(9), round(o[k]['wer'] *100,2), len(o[k]['names']))
+
+def compute_wer_homed_lm_decoding():
+	directories = _get_homed_lm_directories()
+	output = {}
+	for directory in directories:
+		print(directory)
+		wer,gt,pred,names = compute_wer(directory)
+		output[directory] = {'wer':wer,'gt':gt,'pred':pred,'names':names}
+	_show_results(o)
+	return output
+
+
+		
+	
+
+
+
