@@ -5,8 +5,8 @@ from transformers import Wav2Vec2ForCTC
 import glob
 import librosa
 import os
-from texts.models import Response
-from utils import w2v2_decode as wd
+# from texts.models import Response
+# from utils import w2v2_decode as wd
 
 cache_dir = '../wav2vec2_cache/'
 recognizer_dir = '../wav2vec2_cache/'
@@ -45,8 +45,10 @@ def load_model(recognizer_dir):
 	'''
 	return model
 
+'''
 def load_decoder():
 	return wd.Decode(recognizer_dir,use_lm=True)
+'''
 
 def load_audio(filename, sample_rate=None):
 	np_array, sample_rate = librosa.load(filename,sr=sample_rate)
