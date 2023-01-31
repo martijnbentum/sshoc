@@ -1,4 +1,4 @@
-from texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
+om texts.models import Variable,Session,Response,Inputtype,Person,Text,Question
 from texts.models import Transcriber
 from jiwer import wer
 
