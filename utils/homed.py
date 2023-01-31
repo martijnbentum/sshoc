@@ -147,12 +147,26 @@ def compute_wer_homed_lm_decoding():
 		print(directory)
 		wer,gt,pred,names = compute_wer(directory)
 		output[directory] = {'wer':wer,'gt':gt,'pred':pred,'names':names}
-	_show_results(o)
+	_show_results(output)
 	return output
 
 
 		
 	
+def decode_r6_3audio_files(decoder = None):
+    directory = '/vol/tensusers4/ctejedor/MJ/audio_3files/'
+    fn = glob.glob(directory + '*.wav')
+    print(fn)
+    recognizer_dir = '../homed_lm_recognizers/R6'
+    output_dir = '../r6_audio3/'
+    if not decoder:
+        decoder = Decoder(use_cuda=False,use_lm=True, 
+            recognizer_dir=recognizer_dir)
+    decode_audio(decoder,output_dir,audio_filenames=fn,slice_duration=10)
+    
+
+    
+
 
 
 
